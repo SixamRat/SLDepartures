@@ -1,0 +1,112 @@
+// FIL FÖR OFFICEASSISTANT-INTEGRATION
+// Kopiera till:
+// OfficeAssistant.CommandLibrary/CommandLibrary/Integration_libray/SL/GetSLDepartures.cs
+
+using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
+using OfficeAssistant.CommandLibrary.Utils;
+using OfficeAssistant.Common.Dto;
+using OfficeAssistant.Common.Models;
+using OfficeAssistant.Common.Services;
+using OfficeAssistant.Common.Structure;
+
+namespace OfficeAssistant.CommandLibrary.CommandLibrary.Integration_libray.SL;
+
+public class GetSLDepartures : BaseCommand
+{
+    private readonly ILogger<GetSLDepartures> _logger;
+    private readonly IFileService _blobService;
+    private static readonly HttpClient _httpClient = new();
+
+    public GetSLDepartures(
+        ILogger<GetSLDepartures> logger,
+        IFileService blobService) : base(logger)
+    {
+        _logger = logger;
+        _blobService = blobService;
+    }
+
+    public override async Task<BaseCommandResponse> _Invoke(TaskDto task, PerformerContext context)
+    {
+        return await GetDeparturesMethod(task);
+    }
+
+    public async Task<BaseCommandResponse> GetDeparturesMethod(TaskDto task)
+    {
+        try
+        {
+            // 1. Anropa SL:s API (St. Eriksplan = 9116)
+            var url = "https://transport.integration.sl.se/v1/sites/9116/departures?forecast=30";
+            _logger.LogInformation("Anropar SL API: {Url}", url);
+
+            var response = await _httpClient.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+
+            var json = await response.Content.ReadAsStringAsync();
+            var data = JObject.Parse(json);
+            var departures = data["departures"] as JArray;
+
+            if (departures == null || !departures.Any())
+            {
+                _logger.LogWarning("Inga avgångar hittades");
+                return BaseResponses.Failed("Inga avgångar hittades", new Exception("No departures"));
+            }
+
+            // 2. Formatera resultatet (max 10 avgångar)
+            var result = new JArray();
+            foreach (var dep in departures.Take(10))
+            {
+                result.Add(new JObject
+                {
+                    ["linje"] = dep["line"]?["designation"]?.ToString() ?? "",
+                    ["destination"] = dep["destination"]?.ToString() ?? "",
+                    ["visar"] = dep["display"]?.ToString() ?? "",
+                    ["typ"] = dep["line"]?["transport_mode"]?.ToString() ?? "",
+                    ["status"] = dep["state"]?.ToString() ?? ""
+                });
+            }
+
+            // 3. Spara till datapoints.json
+            var dataPointsPath = task.GetDataPointsPath();
+            var dataPointsString = await _blobService.GetFileAsString(dataPointsPath);
+            var dataPoints = JObject.Parse(dataPointsString);
+
+            dataPoints["sl_departures"] = new JObject
+            {
+                ["station"] = "St. Eriksplan",
+                ["hamtad"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                ["avgangar"] = result
+            };
+
+            // 4. Skriv tillbaka till fil
+            using var memoryStream = new MemoryStream();
+            using (var writer = new StreamWriter(memoryStream, leaveOpen: true))
+            {
+                await writer.WriteAsync(dataPoints.ToString());
+                await writer.FlushAsync();
+            }
+            memoryStream.Seek(0, SeekOrigin.Begin);
+
+            var provider = new FileExtensionContentTypeProvider();
+            provider.TryGetContentType("datapoints.json", out var contentType);
+            contentType ??= "application/json";
+
+            var folder = Path.Combine(task.GetProcessRunPath(), "Settings");
+            await _blobService.UploadStream(folder, "datapoints.json", contentType, memoryStream);
+
+            _logger.LogInformation("Hämtade {Count} avgångar", result.Count);
+            return BaseResponses.Success($"Hämtade {result.Count} avgångar", dataPointsPath);
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "HTTP-fel vid anrop till SL API");
+            return BaseResponses.Failed("Kunde inte anropa SL API", ex);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Fel vid hämtning av avgångar");
+            return BaseResponses.Failed("Ett fel uppstod", ex);
+        }
+    }
+}

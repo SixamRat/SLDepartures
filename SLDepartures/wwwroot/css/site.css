@@ -1,0 +1,100 @@
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+}
+
+/* SL styling */
+.sl-container {
+    max-width: 600px;
+    margin: 20px auto;
+    font-family: Arial, sans-serif;
+}
+
+.sl-header {
+    background-color: #0172ad;
+    color: white;
+    padding: 20px;
+    text-align: center;
+    border-radius: 8px 8px 0 0;
+}
+
+    .sl-header h1 {
+        margin: 0;
+        font-size: 24px;
+    }
+
+.sl-updated {
+    font-size: 12px;
+    opacity: 0.8;
+    margin-top: 5px;
+}
+
+.sl-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+    .sl-table th {
+        background-color: #f0f0f0;
+        padding: 12px;
+        text-align: left;
+        border-bottom: 2px solid #0172ad;
+    }
+
+    .sl-table td {
+        padding: 12px;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .sl-table tr:hover {
+        background-color: #f5f5f5;
+    }
+
+.sl-linje {
+    font-weight: bold;
+    font-size: 18px;
+    background-color: #0172ad;
+    color: white;
+    padding: 4px 10px;
+    border-radius: 4px;
+    display: inline-block;
+    min-width: 30px;
+    text-align: center;
+}
+
+.sl-tid {
+    font-weight: bold;
+    color: #0172ad;
+}
+
+.sl-typ {
+    font-size: 20px;
+}
+
+.sl-cancelled {
+    background-color: #ffe0e0;
+    color: #cc0000;
+}
+
+    .sl-cancelled td {
+        text-decoration: line-through;
+        opacity: 0.7;
+    }

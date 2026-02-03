@@ -1,0 +1,51 @@
+﻿@model List<SLDepartures.Models.Departure>
+
+@{
+    ViewData["Title"] = "St. Eriksplan - Avgångar";
+}
+
+<div class="sl-container">
+    <div class="sl-header">
+        <h1>🚇 St. Eriksplan</h1>
+        <div class="sl-updated">Uppdaterad: @DateTime.Now.ToString("HH:mm:ss")</div>
+    </div>
+
+    <table class="sl-table">
+        <thead>
+            <tr>
+                <th>Linje</th>
+                <th>Destination</th>
+                <th>Avgår</th>
+                <th>Typ</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var dep in Model)
+            {
+                var rowClass = dep.Status == "CANCELLED" ? "sl-cancelled" : "";
+                var typIcon = dep.Typ switch
+                {
+                    "METRO" => "🚇",
+                    "BUS" => "🚌",
+                    "TRAM" => "🚃",
+                    "TRAIN" => "🚆",
+                    _ => "🚏"
+                };
+
+                <tr class="@rowClass">
+                    <td><span class="sl-linje">@dep.Linje</span></td>
+                    <td>@dep.Destination</td>
+                    <td class="sl-tid">@dep.Visar</td>
+                    <td class="sl-typ">@typIcon</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+@section Scripts {
+    <script>               
+        setTimeout(function() {
+            location.reload();
+        }, 10000);
+    </script>
+}
