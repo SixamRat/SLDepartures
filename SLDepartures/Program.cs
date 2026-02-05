@@ -6,15 +6,15 @@ namespace SLDepartures
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Registrera SL-servicen
+            
             builder.Services.AddHttpClient<SLDepartures.Services.SLService>();
 
-            // Add services to the container.
+            
             builder.Services.AddControllersWithViews();
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
+            
             if (!app.Environment.IsDevelopment())
             {
                 app.UseExceptionHandler("/Home/Error");
@@ -31,7 +31,7 @@ namespace SLDepartures
 
             app.MapControllerRoute(
                 name: "default",
-                pattern: "{controller=Home}/{action=Index}/{id?}");
+                pattern: "{controller=Departures}/{action=Index}/{id?}");
 
             app.Run();
         }
